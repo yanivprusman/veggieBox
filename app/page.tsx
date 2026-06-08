@@ -78,7 +78,7 @@ export default function Home() {
       <main className="p-3 max-w-3xl mx-auto">
         {tab === 'route' && (
           <ul className="space-y-2">
-            {stops.map((s) => (
+            {stops.map((s, i) => (
               <li
                 key={s.stopId}
                 data-id={`stop-${s.stopId}`}
@@ -88,7 +88,7 @@ export default function Home() {
               >
                 <div className="flex-1">
                   <div className={`font-semibold ${s.status === 'delivered' ? 'line-through' : ''}`}>
-                    {s.seq}. {s.name} <span className="text-xs text-gray-400">×{s.cartons}</span>
+                    {i + 1}. {s.name} <span className="text-xs text-gray-400">×{s.cartons}</span>
                   </div>
                   <div className="text-sm text-gray-600">{s.address ?? '— אין כתובת —'}</div>
                   {s.houseInstructions && (

@@ -7,7 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -95,8 +95,9 @@ fun RouteScreen(
                     contentPadding = PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(visible, key = { it.stopId }) { stop ->
+                    itemsIndexed(visible, key = { _, it -> it.stopId }) { index, stop ->
                         StopRow(
+                            position = index + 1,
                             stop = stop,
                             onOpen = { onOpenStop(stop.stopId) },
                             onDeliver = { vm.deliver(stop.stopId) },
@@ -155,6 +156,7 @@ private fun HideToggleRow(hide: Boolean, onToggle: () -> Unit) {
 
 @Composable
 private fun StopRow(
+    position: Int,
     stop: Stop,
     onOpen: () -> Unit,
     onDeliver: () -> Unit,
@@ -174,7 +176,7 @@ private fun StopRow(
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    "${stop.seq}. ${stop.name}",
+                    "$position. ${stop.name}",
                     Modifier.weight(1f),
                     style = MaterialTheme.typography.titleMedium,
                     textDecoration = if (delivered) TextDecoration.LineThrough else null,
