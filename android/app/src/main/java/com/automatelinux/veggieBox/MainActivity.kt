@@ -4,6 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import com.automatelinux.veggieBox.ui.navigation.AppNavGraph
 import com.automatelinux.veggieBox.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -14,8 +17,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            AppTheme {
-                AppNavGraph()
+            // Hebrew-first UI: force RTL regardless of device locale.
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                AppTheme {
+                    AppNavGraph()
+                }
             }
         }
     }

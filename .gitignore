@@ -48,3 +48,22 @@ app/feedback-lib-issues/
 # Android project (bind-mounted from addnewfeature)
 android/feedback-lib/
 android/build-logic/
+
+# Android build artifacts / local config
+android/local.properties
+android/.gradle/
+android/.kotlin/
+android/build/
+android/app/build/
+android/captures/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Seed / business data with PII — never commit (lives in the DB only)
+seed/*.local.*
+data/customers*.json
+
+# Uploaded delivery photos/videos
+/public/uploads/

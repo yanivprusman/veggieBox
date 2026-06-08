@@ -1,6 +1,7 @@
 package com.automatelinux.veggieBox.di
 
 import com.automatelinux.veggieBox.BuildConfig
+import com.automatelinux.veggieBox.data.api.VeggieApi
 import com.automatelinux.feedbacklib.FeedbackConfig
 import com.automatelinux.feedbacklib.data.api.FeedbackApi
 import dagger.Module
@@ -37,7 +38,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(client: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.0.2:3073/")
+            .baseUrl(BuildConfig.API_BASE_URL)
             .client(client)
             .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(GsonConverterFactory.create())
@@ -54,5 +55,11 @@ object NetworkModule {
     @Singleton
     fun provideFeedbackApi(retrofit: Retrofit): FeedbackApi {
         return retrofit.create(FeedbackApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideVeggieApi(retrofit: Retrofit): VeggieApi {
+        return retrofit.create(VeggieApi::class.java)
     }
 }
