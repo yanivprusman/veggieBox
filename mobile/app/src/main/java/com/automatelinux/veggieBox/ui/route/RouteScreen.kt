@@ -44,18 +44,19 @@ fun RouteScreen(
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
-    // After a reorder, jump to the top + confirm — otherwise the change (which lands
-    // at the top of the list) is invisible if the user happened to be scrolled down.
-    val onReordered: () -> Unit = {
-        scope.launch {
+    // When a reorder lands (the ViewModel bumps reorderTick only after the route has
+    // reloaded), snap the list to the top so the change — always at #1 — is visible.
+    val reorderTick by vm.reorderTick.collectAsState()
+    LaunchedEffect(reorderTick) {
+        if (reorderTick > 0) {
             listState.animateScrollToItem(0)
             snackbar.showSnackbar("המסלול סודר מחדש")
         }
     }
 
     val locPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) LocationUtil.requestOneShot(ctx) { lat, lon -> vm.optimize(lat, lon) { onReordered() } }
-        else vm.optimize(null, null) { onReordered() }
+        if (granted) LocationUtil.requestOneShot(ctx) { lat, lon -> vm.optimize(lat, lon) }
+        else vm.optimize(null, null)
     }
     var showStartChooser by remember { mutableStateOf(false) }
 
@@ -127,7 +128,7 @@ fun RouteScreen(
     if (showStartChooser) {
         StartChooserDialog(
             centralLabel = biz?.defaultCentralDrop,
-            onCentral = { showStartChooser = false; vm.optimize(null, null) { onReordered() } },
+            onCentral = { showStartChooser = false; vm.optimize(null, null) },
             onMyGps = {
                 showStartChooser = false
                 locPerm.launch(Manifest.permission.ACCESS_FINE_LOCATION)

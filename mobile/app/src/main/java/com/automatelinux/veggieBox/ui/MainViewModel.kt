@@ -36,23 +36,33 @@ class MainViewModel @Inject constructor(
     private val _state = MutableStateFlow(UiState(hideDelivered = settings.hideDelivered))
     val state: StateFlow<UiState> = _state.asStateFlow()
 
+    // Bumped after a reorder has completed AND the route has reloaded, so the UI can
+    // snap the list to the top — the reordered #1 is otherwise off-screen and the
+    // change reads as "nothing happened".
+    private val _reorderTick = MutableStateFlow(0)
+    val reorderTick: StateFlow<Int> = _reorderTick.asStateFlow()
+
     init {
         load()
     }
 
     fun load() {
-        viewModelScope.launch {
-            _state.update { it.copy(loading = true, error = null) }
-            try {
-                val route = api.route()
-                val earnings = runCatching { api.earnings() }.getOrNull()
-                val greet = runCatching { api.greeting() }.getOrNull()?.targets ?: emptyList()
-                _state.update {
-                    it.copy(loading = false, route = route, earnings = earnings, greet = greet)
-                }
-            } catch (e: Exception) {
-                _state.update { it.copy(loading = false, error = e.message ?: "load failed") }
+        viewModelScope.launch { reload() }
+    }
+
+    // Awaitable reload so callers (e.g. optimize) can sequence work after the new
+    // route is actually in state — `load()` alone is fire-and-forget.
+    private suspend fun reload() {
+        _state.update { it.copy(loading = true, error = null) }
+        try {
+            val route = api.route()
+            val earnings = runCatching { api.earnings() }.getOrNull()
+            val greet = runCatching { api.greeting() }.getOrNull()?.targets ?: emptyList()
+            _state.update {
+                it.copy(loading = false, route = route, earnings = earnings, greet = greet)
             }
+        } catch (e: Exception) {
+            _state.update { it.copy(loading = false, error = e.message ?: "load failed") }
         }
     }
 
@@ -96,7 +106,8 @@ class MainViewModel @Inject constructor(
         val routeId = _state.value.route?.routeId ?: return
         viewModelScope.launch {
             runCatching { api.optimize(OptimizeBody(routeId, lat, lon)) }
-            load()
+            reload()                       // await: state holds the new order before we signal
+            _reorderTick.update { it + 1 } // tells the UI to scroll the (now-reordered) list to top
             onDone()
         }
     }
