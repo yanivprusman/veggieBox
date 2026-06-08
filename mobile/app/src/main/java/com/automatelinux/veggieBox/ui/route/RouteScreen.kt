@@ -50,7 +50,10 @@ fun RouteScreen(
     val reorderTick by vm.reorderTick.collectAsState()
     LaunchedEffect(reorderTick) {
         if (reorderTick > 0) {
-            listState.animateScrollToItem(0)
+            // INSTANT jump, not animateScrollToItem: the keyed list anchors on the old
+            // first item, which the reorder moves down — an animated scroll would sweep
+            // down-to-follow-it then back up. scrollToItem overwrites that before paint.
+            listState.scrollToItem(0)
             // Material3 Snackbar only exposes Short(4s)/Long(10s); show it Indefinite and
             // auto-dismiss after 1.5s for a brief-but-readable confirmation. A new reorder
             // cancels this LaunchedEffect, so the toast is replaced rather than stacked.
