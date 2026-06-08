@@ -89,10 +89,10 @@ export default function DetailsForm({ params }: { params: Promise<{ token: strin
 
   return (
     <Shell>
-      <h1 className="text-2xl font-bold mb-1">{c.businessName} 🥬</h1>
+      <h1 className="text-2xl font-bold mb-1">vegi box 🥬</h1>
       <p className="text-gray-500 mb-1">שלום {c.name},</p>
       <p className="text-gray-600 mb-5 text-sm">
-        כדי שנדע בדיוק לאן להביא את ארגז הירקות{c.area ? ` ב${c.area}` : ''}, מלאו בבקשה:
+        כדי שאדע בדיוק לאן להביא את ארגז הירקות{c.area ? ` ב${c.area}` : ''}, בבקשה למלא:
       </p>
 
       <label className="block mb-4">
