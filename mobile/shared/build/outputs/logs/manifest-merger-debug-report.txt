@@ -1,0 +1,16 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /opt/dev/veggieBox/mobile/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest14372548922655065244.xml:2:13-83
+INJECTED from /opt/dev/veggieBox/mobile/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest14372548922655065244.xml:2:13-83
+	package
+		INJECTED from /opt/dev/veggieBox/mobile/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest14372548922655065244.xml
+	xmlns:android
+		ADDED from /opt/dev/veggieBox/mobile/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest14372548922655065244.xml:2:23-81
+uses-sdk
+INJECTED from /opt/dev/veggieBox/mobile/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest14372548922655065244.xml reason: use-sdk injection requested
+INJECTED from /opt/dev/veggieBox/mobile/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest14372548922655065244.xml
+INJECTED from /opt/dev/veggieBox/mobile/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest14372548922655065244.xml
+	android:targetSdkVersion
+		INJECTED from /opt/dev/veggieBox/mobile/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest14372548922655065244.xml
+	android:minSdkVersion
+		INJECTED from /opt/dev/veggieBox/mobile/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest14372548922655065244.xml

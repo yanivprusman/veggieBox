@@ -46,16 +46,16 @@ app/api/feedback/
 app/feedback-lib-issues/
 
 # Android project (bind-mounted from addnewfeature)
-android/feedback-lib/
-android/build-logic/
+mobile/feedback-lib/
+mobile/build-logic/
 
 # Android build artifacts / local config
-android/local.properties
-android/.gradle/
-android/.kotlin/
-android/build/
-android/app/build/
-android/captures/
+mobile/local.properties
+mobile/.gradle/
+mobile/.kotlin/
+mobile/build/
+mobile/app/build/
+mobile/captures/
 *.apk
 *.aab
 *.keystore
