@@ -25,7 +25,7 @@ val envFile = rootProject.file(".env")
 val envProps = Properties()
 if (envFile.exists()) envFile.inputStream().use { envProps.load(it) }
 val isProd = envProps.getProperty("IS_PROD", "false").toBoolean()
-val apiBaseUrl = envProps.getProperty("API_BASE_URL", "http://10.7.0.2:3073/")
+val apiBaseUrl = envProps.getProperty("API_BASE_URL", "https://veggiebox.prod.ya-niv.com/")
 
 android {
     namespace = "com.automatelinux.veggieBox"

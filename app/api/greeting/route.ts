@@ -3,7 +3,17 @@ import { q } from '@/lib/db';
 import { getBusiness, getWorker, intlPhone, renderTemplate, getTemplate } from '@/lib/biz';
 
 function publicBase(req: Request): string {
-  return (process.env.PUBLIC_BASE_URL ?? new URL(req.url).origin).replace(/\/$/, '');
+  // Explicit override wins; otherwise trust nginx's forwarded host (the real
+  // public hostname customers must reach), then fall back to the request origin.
+  const env = process.env.PUBLIC_BASE_URL;
+  if (env) return env.replace(/\/$/, '');
+  const h = req.headers;
+  const host = h.get('x-forwarded-host') ?? h.get('host');
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  if (host && !host.startsWith('0.0.0.0') && !host.startsWith('localhost') && !host.startsWith('127.')) {
+    return `${proto}://${host}`;
+  }
+  return new URL(req.url).origin.replace(/\/$/, '');
 }
 
 // Batch greeting: returns a ready-to-send message + wa.me deep link + self-service
