@@ -30,6 +30,8 @@ export async function GET(req: Request) {
         currency: business.currency,
         mapCenterLat: business.map_center_lat,
         mapCenterLon: business.map_center_lon,
+        centralDropLat: business.central_drop_lat,
+        centralDropLon: business.central_drop_lon,
       },
       worker: { id: worker.id, name: worker.name },
       routeId,

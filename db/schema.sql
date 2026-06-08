@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS businesses (
   public_base_url      VARCHAR(255) DEFAULT NULL,           -- public URL for self-service links (per business)
   map_center_lat       DOUBLE       DEFAULT NULL,
   map_center_lon       DOUBLE       DEFAULT NULL,
+  central_drop_lat     DOUBLE       DEFAULT NULL,           -- pallet drop / default route start (e.g. משעול מרווה 5)
+  central_drop_lon     DOUBLE       DEFAULT NULL,
   created_at           TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

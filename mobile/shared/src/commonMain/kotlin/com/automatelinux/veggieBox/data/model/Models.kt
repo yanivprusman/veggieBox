@@ -29,6 +29,8 @@ data class Business(
     val currency: String,
     val mapCenterLat: Double?,
     val mapCenterLon: Double?,
+    val centralDropLat: Double? = null,
+    val centralDropLon: Double? = null,
 )
 
 @Serializable

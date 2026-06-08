@@ -11,6 +11,10 @@ export type Business = {
   public_base_url: string | null;
   map_center_lat: number | null;
   map_center_lon: number | null;
+  // Central drop point (where the pallet of cartons is dropped, and where the
+  // worker usually starts the route). Used as the default optimise start point.
+  central_drop_lat: number | null;
+  central_drop_lon: number | null;
 };
 
 export type Worker = { id: number; business_id: number; name: string; phone: string | null };
@@ -74,6 +78,18 @@ export async function getTemplate(businessId: number, key: string): Promise<stri
   return rows[0]?.body ?? '';
 }
 
+// Resolve the start point for a geographic optimise: the business central drop
+// (pallet drop) if it has coords, otherwise the first geocoded stop. Returns null
+// when nothing usable exists. Shared by the on-create auto-order and /optimize.
+export function resolveStartPoint(
+  central: { lat: number | null; lon: number | null },
+  stops: { lat: number | null; lon: number | null }[],
+): { lat: number; lon: number } | null {
+  if (central.lat != null && central.lon != null) return { lat: central.lat, lon: central.lon };
+  const firstGeo = stops.find((s) => s.lat != null && s.lon != null);
+  return firstGeo ? { lat: firstGeo.lat as number, lon: firstGeo.lon as number } : null;
+}
+
 // Find (or create) today's active route for the worker, and make sure every active
 // customer has a pending stop on it (so newly added customers show up too).
 export async function getOrCreateTodayRoute(businessId: number, workerId: number): Promise<number> {
@@ -82,6 +98,7 @@ export async function getOrCreateTodayRoute(businessId: number, workerId: number
     [businessId, workerId],
   );
   let routeId: number;
+  let isNewRoute = false;
   if (existing[0]) {
     routeId = existing[0].id;
   } else {
@@ -90,6 +107,7 @@ export async function getOrCreateTodayRoute(businessId: number, workerId: number
       [businessId, workerId],
     );
     routeId = res.insertId;
+    isNewRoute = true;
   }
   // Ensure a stop exists for each active customer not yet on the route.
   await exec(
@@ -102,6 +120,24 @@ export async function getOrCreateTodayRoute(businessId: number, workerId: number
        AND NOT EXISTS (SELECT 1 FROM route_stops s WHERE s.route_id=? AND s.customer_id=c.id)`,
     [routeId, businessId, routeId],
   );
+  // One-time geographic auto-order, only on the day's first creation, so a worker's
+  // manual reorder later in the day is never clobbered. Cheap (nearest-neighbour over
+  // ~20 stops, in-process) — runs once, not on every load.
+  if (isNewRoute) {
+    const brows = await q<{ clat: number | null; clon: number | null }>(
+      'SELECT central_drop_lat AS clat, central_drop_lon AS clon FROM businesses WHERE id=? LIMIT 1',
+      [businessId],
+    );
+    const stops = await getStops(routeId);
+    const start = resolveStartPoint({ lat: brows[0]?.clat ?? null, lon: brows[0]?.clon ?? null }, stops);
+    if (start) {
+      const order = nearestNeighbourOrder(stops, start);
+      let seq = 1;
+      for (const stopId of order) {
+        await exec('UPDATE route_stops SET seq=? WHERE id=?', [seq++, stopId]);
+      }
+    }
+  }
   return routeId;
 }
 

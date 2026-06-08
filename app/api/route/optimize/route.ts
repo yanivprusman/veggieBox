@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { exec } from '@/lib/db';
-import { getStops, nearestNeighbourOrder } from '@/lib/biz';
+import { exec, q } from '@/lib/db';
+import { getStops, nearestNeighbourOrder, resolveStartPoint } from '@/lib/biz';
 
-// Reorder a route's stops by nearest-neighbour from a start point (the worker's
-// current GPS, or the route's first geocoded stop). Writes new seq values.
+// Reorder a route's stops by nearest-neighbour from a start point. Priority:
+// explicit GPS (startLat/startLon) -> the business central drop (pallet point) ->
+// the route's first geocoded stop. Writes new seq values.
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -11,13 +12,18 @@ export async function POST(req: Request) {
     if (!routeId) return NextResponse.json({ ok: false, error: 'routeId required' }, { status: 400 });
 
     const stops = await getStops(routeId);
-    const firstGeo = stops.find((s) => s.lat != null && s.lon != null);
-    const start =
+    let start: { lat: number; lon: number } | null =
       body.startLat != null && body.startLon != null
         ? { lat: Number(body.startLat), lon: Number(body.startLon) }
-        : firstGeo
-          ? { lat: firstGeo.lat as number, lon: firstGeo.lon as number }
-          : null;
+        : null;
+    if (!start) {
+      const brows = await q<{ clat: number | null; clon: number | null }>(
+        `SELECT b.central_drop_lat AS clat, b.central_drop_lon AS clon
+         FROM routes r JOIN businesses b ON b.id = r.business_id WHERE r.id=? LIMIT 1`,
+        [routeId],
+      );
+      start = resolveStartPoint({ lat: brows[0]?.clat ?? null, lon: brows[0]?.clon ?? null }, stops);
+    }
     if (!start) {
       return NextResponse.json(
         { ok: false, error: 'no start point and no geocoded stops to optimise from' },

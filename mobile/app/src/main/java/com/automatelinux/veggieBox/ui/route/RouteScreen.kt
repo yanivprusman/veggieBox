@@ -47,6 +47,7 @@ fun RouteScreen(
         if (granted) LocationUtil.requestOneShot(ctx) { lat, lon -> vm.optimize(lat, lon) }
         else vm.optimize(null, null)
     }
+    var showStartChooser by remember { mutableStateOf(false) }
 
     val biz = state.route?.business
     val stops = state.route?.stops.orEmpty()
@@ -66,7 +67,7 @@ fun RouteScreen(
                         )
                     }
                     IconButton(onClick = onOpenMap) { Icon(Icons.Filled.Map, contentDescription = "מפה") }
-                    IconButton(onClick = { locPerm.launch(Manifest.permission.ACCESS_FINE_LOCATION) }) {
+                    IconButton(onClick = { showStartChooser = true }) {
                         Icon(Icons.Filled.Route, contentDescription = "סדר מסלול")
                     }
                     IconButton(onClick = { vm.load() }) { Icon(Icons.Filled.Refresh, contentDescription = "רענן") }
@@ -111,6 +112,41 @@ fun RouteScreen(
             }
         }
     }
+
+    if (showStartChooser) {
+        StartChooserDialog(
+            centralLabel = biz?.defaultCentralDrop,
+            onCentral = { showStartChooser = false; vm.optimize(null, null) },
+            onMyGps = {
+                showStartChooser = false
+                locPerm.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            },
+            onDismiss = { showStartChooser = false },
+        )
+    }
+}
+
+// "Order route by distance — start from where?" The central drop (pallet point) is
+// the default; the worker's live GPS is the alternative for re-ordering mid-route.
+@Composable
+private fun StartChooserDialog(
+    centralLabel: String?,
+    onCentral: () -> Unit,
+    onMyGps: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("סדר מסלול לפי מרחק") },
+        text = {
+            Text(
+                "מאיפה להתחיל את המסלול?" +
+                    (if (!centralLabel.isNullOrBlank()) "\n\nנקודה מרכזית: $centralLabel" else ""),
+            )
+        },
+        confirmButton = { TextButton(onClick = onCentral) { Text("📦 נקודה מרכזית") } },
+        dismissButton = { TextButton(onClick = onMyGps) { Text("📍 המיקום שלי") } },
+    )
 }
 
 @Composable
