@@ -55,6 +55,8 @@ mobile/.gradle/
 mobile/.kotlin/
 mobile/build/
 mobile/app/build/
+mobile/**/build/
+mobile/shared/build/
 mobile/captures/
 *.apk
 *.aab

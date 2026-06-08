@@ -2,8 +2,6 @@ package com.automatelinux.veggieBox.di
 
 import com.automatelinux.veggieBox.BuildConfig
 import com.automatelinux.veggieBox.data.api.VeggieApi
-import com.automatelinux.feedbacklib.FeedbackConfig
-import com.automatelinux.feedbacklib.data.api.FeedbackApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -43,18 +41,6 @@ object NetworkModule {
             .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-    }
-
-    @Provides
-    @Singleton
-    fun provideFeedbackConfig(): FeedbackConfig {
-        return FeedbackConfig(appName = "veggieBox", isProd = BuildConfig.IS_PROD)
-    }
-
-    @Provides
-    @Singleton
-    fun provideFeedbackApi(retrofit: Retrofit): FeedbackApi {
-        return retrofit.create(FeedbackApi::class.java)
     }
 
     @Provides

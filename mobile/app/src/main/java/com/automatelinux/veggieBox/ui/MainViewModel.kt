@@ -3,6 +3,7 @@ package com.automatelinux.veggieBox.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.automatelinux.veggieBox.data.api.VeggieApi
+import com.automatelinux.veggieBox.util.SettingsStore
 import com.automatelinux.veggieBox.data.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,9 +29,11 @@ data class UiState(
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val api: VeggieApi,
+    private val settings: SettingsStore,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(UiState())
+    // Restore persisted preferences (e.g. the hide-delivered toggle) on launch.
+    private val _state = MutableStateFlow(UiState(hideDelivered = settings.hideDelivered))
     val state: StateFlow<UiState> = _state.asStateFlow()
 
     init {
@@ -53,7 +56,11 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun toggleHideDelivered() = _state.update { it.copy(hideDelivered = !it.hideDelivered) }
+    fun toggleHideDelivered() {
+        val next = !_state.value.hideDelivered
+        settings.hideDelivered = next   // persist across launches
+        _state.update { it.copy(hideDelivered = next) }
+    }
 
     fun stops(): List<Stop> = _state.value.route?.stops ?: emptyList()
     fun stop(id: Int): Stop? = stops().firstOrNull { it.stopId == id }

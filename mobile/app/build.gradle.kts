@@ -69,6 +69,7 @@ android {
 
 dependencies {
     implementation(project(":shared"))
+    implementation(libs.multiplatform.settings)
     // Compose BOM
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
@@ -113,5 +114,5 @@ dependencies {
     implementation(libs.activity.compose)
 
     // Feedback lib
-    implementation(project(":feedback-lib"))
+    "devImplementation"(project(":feedback-lib"))
 }

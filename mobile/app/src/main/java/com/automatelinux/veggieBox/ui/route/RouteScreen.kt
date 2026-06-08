@@ -37,8 +37,6 @@ fun RouteScreen(
     vm: MainViewModel,
     onOpenStop: (Int) -> Unit,
     onOpenMap: () -> Unit,
-    onOpenFeedback: () -> Unit,
-    showFeedback: Boolean,
 ) {
     val state by vm.state.collectAsState()
     val ctx = LocalContext.current
@@ -72,9 +70,6 @@ fun RouteScreen(
                         Icon(Icons.Filled.Route, contentDescription = "סדר מסלול")
                     }
                     IconButton(onClick = { vm.load() }) { Icon(Icons.Filled.Refresh, contentDescription = "רענן") }
-                    if (showFeedback) {
-                        IconButton(onClick = onOpenFeedback) { Icon(Icons.Filled.BugReport, contentDescription = "דווח") }
-                    }
                 },
             )
         },
