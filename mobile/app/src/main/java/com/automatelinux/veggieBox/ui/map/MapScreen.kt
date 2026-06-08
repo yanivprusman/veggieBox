@@ -1,6 +1,13 @@
 package com.automatelinux.veggieBox.ui.map
 
 import android.Manifest
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.graphics.drawable.BitmapDrawable
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -30,8 +37,12 @@ fun MapScreen(vm: MainViewModel) {
     val ctx = LocalContext.current
     val stops = state.route?.stops.orEmpty()
     val biz = state.route?.business
-    val geocoded = stops.filter { it.lat != null && it.lon != null }
-    val visible = if (state.hideDelivered) geocoded.filter { it.status != "delivered" } else geocoded
+    // Number stops by their position in the same ordered list the Route screen shows,
+    // so a pin's number always matches its row number there (non-geocoded stops still
+    // count toward the order, but only geocoded ones get a marker).
+    val ordered = if (state.hideDelivered) stops.filter { it.status != "delivered" } else stops
+    val numberOf = ordered.withIndex().associate { (i, s) -> s.stopId to i + 1 }
+    val visible = ordered.filter { it.lat != null && it.lon != null }
 
     val mapView = remember {
         MapView(ctx).apply {
@@ -78,14 +89,12 @@ fun MapScreen(vm: MainViewModel) {
                 update = { mv ->
                     mv.overlays.clear()
                     visible.forEach { s ->
+                        val pos = numberOf[s.stopId] ?: 0
                         val m = Marker(mv)
                         m.position = GeoPoint(s.lat!!, s.lon!!)
                         m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                        m.icon = ContextCompat.getDrawable(
-                            ctx,
-                            if (s.status == "delivered") R.drawable.pin_done else R.drawable.pin_pending,
-                        )
-                        m.title = s.name
+                        m.icon = numberedPin(ctx, pos, s.status == "delivered")
+                        m.title = "$pos. ${s.name}"
                         m.subDescription = s.address ?: ""
                         m.setOnMarkerClickListener { _, _ ->
                             Intents.waze(ctx, s.lat, s.lon, s.address)
@@ -113,4 +122,50 @@ fun MapScreen(vm: MainViewModel) {
             }
         }
     }
+}
+
+// Build a teardrop pin (orange = pending, green = delivered) with the stop's route
+// number drawn in a white disc in the pin head, so the worker can read the delivery
+// order straight off the map without opening each marker.
+private fun numberedPin(ctx: Context, position: Int, delivered: Boolean): BitmapDrawable {
+    val base = ContextCompat.getDrawable(
+        ctx,
+        if (delivered) R.drawable.pin_done else R.drawable.pin_pending,
+    )!!.mutate()
+    val w = base.intrinsicWidth
+    val h = base.intrinsicHeight
+    val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bmp)
+    base.setBounds(0, 0, w, h)
+    base.draw(canvas)
+
+    // Head circle of the teardrop sits at (12, 9) in the 24-unit viewport.
+    val cx = w / 2f
+    val cy = h * (9f / 24f)
+    val r = w * (5.4f / 24f)
+    val statusColor = if (delivered) 0xFF2E7D32.toInt() else 0xFFF57C00.toInt()
+
+    val disc = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        style = Paint.Style.FILL
+    }
+    canvas.drawCircle(cx, cy, r, disc)
+
+    val label = position.toString()
+    val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = statusColor
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.DEFAULT_BOLD
+        textSize = r * 1.7f
+    }
+    // Shrink the text so multi-digit numbers still fit inside the disc.
+    val maxWidth = r * 1.7f
+    val measured = text.measureText(label)
+    if (measured > maxWidth) text.textSize *= maxWidth / measured
+
+    val fm = text.fontMetrics
+    val baseline = cy - (fm.ascent + fm.descent) / 2f
+    canvas.drawText(label, cx, baseline, text)
+
+    return BitmapDrawable(ctx.resources, bmp)
 }
