@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -42,10 +43,19 @@ fun RouteScreen(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
+    val listState = rememberLazyListState()
+    // After a reorder, jump to the top + confirm — otherwise the change (which lands
+    // at the top of the list) is invisible if the user happened to be scrolled down.
+    val onReordered: () -> Unit = {
+        scope.launch {
+            listState.animateScrollToItem(0)
+            snackbar.showSnackbar("המסלול סודר מחדש")
+        }
+    }
 
     val locPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) LocationUtil.requestOneShot(ctx) { lat, lon -> vm.optimize(lat, lon) }
-        else vm.optimize(null, null)
+        if (granted) LocationUtil.requestOneShot(ctx) { lat, lon -> vm.optimize(lat, lon) { onReordered() } }
+        else vm.optimize(null, null) { onReordered() }
     }
     var showStartChooser by remember { mutableStateOf(false) }
 
@@ -88,6 +98,7 @@ fun RouteScreen(
             } else {
                 LazyColumn(
                     Modifier.fillMaxSize(),
+                    state = listState,
                     contentPadding = PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -116,7 +127,7 @@ fun RouteScreen(
     if (showStartChooser) {
         StartChooserDialog(
             centralLabel = biz?.defaultCentralDrop,
-            onCentral = { showStartChooser = false; vm.optimize(null, null) },
+            onCentral = { showStartChooser = false; vm.optimize(null, null) { onReordered() } },
             onMyGps = {
                 showStartChooser = false
                 locPerm.launch(Manifest.permission.ACCESS_FINE_LOCATION)
