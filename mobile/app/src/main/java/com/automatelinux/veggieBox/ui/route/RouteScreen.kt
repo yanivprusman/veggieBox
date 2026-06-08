@@ -28,6 +28,7 @@ import com.automatelinux.veggieBox.ui.MainViewModel
 import com.automatelinux.veggieBox.util.Intents
 import com.automatelinux.veggieBox.util.LocationUtil
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 val Green = Color(0xFF2E7D32)
 val Orange = Color(0xFFF57C00)
@@ -50,7 +51,12 @@ fun RouteScreen(
     LaunchedEffect(reorderTick) {
         if (reorderTick > 0) {
             listState.animateScrollToItem(0)
-            snackbar.showSnackbar("המסלול סודר מחדש")
+            // Material3 Snackbar only exposes Short(4s)/Long(10s); show it Indefinite and
+            // auto-dismiss after 1.5s for a brief-but-readable confirmation. A new reorder
+            // cancels this LaunchedEffect, so the toast is replaced rather than stacked.
+            withTimeoutOrNull(1500) {
+                snackbar.showSnackbar("המסלול סודר מחדש", duration = SnackbarDuration.Indefinite)
+            }
         }
     }
 
