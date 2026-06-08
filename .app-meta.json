@@ -1,0 +1,7 @@
+{
+  "description": "Delivery route manager for produce-box deliveries (Midreshet Ben-Gurion; multi-business, multi-worker)",
+  "icon": "Truck",
+  "sharedLibs": [
+    "android-feedback-lib"
+  ]
+}
