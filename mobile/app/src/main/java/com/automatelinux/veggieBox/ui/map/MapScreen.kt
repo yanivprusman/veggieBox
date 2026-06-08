@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.automatelinux.veggieBox.R
+import com.automatelinux.veggieBox.data.model.Stop
 import com.automatelinux.veggieBox.ui.MainViewModel
 import com.automatelinux.veggieBox.util.Intents
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -32,9 +33,11 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 @Composable
-fun MapScreen(vm: MainViewModel) {
+fun MapScreen(vm: MainViewModel, onOpenInRoute: (Int) -> Unit = {}) {
     val state by vm.state.collectAsState()
     val ctx = LocalContext.current
+    // A tapped pin opens a small action sheet instead of jumping straight to Waze.
+    var selected by remember { mutableStateOf<Stop?>(null) }
     val stops = state.route?.stops.orEmpty()
     val biz = state.route?.business
     // Number stops by their position in the same ordered list the Route screen shows,
@@ -97,7 +100,7 @@ fun MapScreen(vm: MainViewModel) {
                         m.title = "$pos. ${s.name}"
                         m.subDescription = s.address ?: ""
                         m.setOnMarkerClickListener { _, _ ->
-                            Intents.waze(ctx, s.lat, s.lon, s.address)
+                            selected = s
                             true
                         }
                         mv.overlays.add(m)
@@ -120,6 +123,34 @@ fun MapScreen(vm: MainViewModel) {
             ) {
                 Icon(Icons.Filled.MyLocation, contentDescription = "מרכז על המיקום שלי")
             }
+        }
+
+        // Tapping a pin opens this action sheet: jump to the stop in the Route (מסלול)
+        // tab, or hand off to Waze for turn-by-turn navigation.
+        selected?.let { s ->
+            val pos = numberOf[s.stopId] ?: 0
+            AlertDialog(
+                onDismissRequest = { selected = null },
+                title = { Text("$pos. ${s.name}") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val addr = s.address
+                        if (!addr.isNullOrBlank()) {
+                            Text(addr, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Button(
+                            onClick = { selected = null; onOpenInRoute(s.stopId) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("📋 פתח במסלול") }
+                        FilledTonalButton(
+                            onClick = { selected = null; Intents.waze(ctx, s.lat, s.lon, s.address) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("🧭 נווט עם Waze") }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = { TextButton(onClick = { selected = null }) { Text("ביטול") } },
+            )
         }
     }
 }

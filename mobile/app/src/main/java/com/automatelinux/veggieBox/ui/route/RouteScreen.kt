@@ -3,6 +3,7 @@ package com.automatelinux.veggieBox.ui.route
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -73,6 +74,17 @@ fun RouteScreen(
     val stops = state.route?.stops.orEmpty()
     val visible = if (state.hideDelivered) stops.filter { it.status != "delivered" } else stops
 
+    // When a map pin's "open in route" was tapped, scroll to that stop and highlight
+    // it briefly, then clear the focus so the highlight is a one-shot flash.
+    val focusStopId by vm.focusStopId.collectAsState()
+    LaunchedEffect(focusStopId) {
+        val target = focusStopId ?: return@LaunchedEffect
+        val idx = visible.indexOfFirst { it.stopId == target }
+        if (idx >= 0) listState.animateScrollToItem(idx)
+        kotlinx.coroutines.delay(2200)
+        vm.clearFocusStop()
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
@@ -116,6 +128,7 @@ fun RouteScreen(
                         StopRow(
                             position = index + 1,
                             stop = stop,
+                            highlighted = stop.stopId == focusStopId,
                             onOpen = { onOpenStop(stop.stopId) },
                             onDeliver = { vm.deliver(stop.stopId) },
                             onUndo = { vm.undeliver(stop.stopId) },
@@ -210,15 +223,22 @@ private fun HideToggleRow(hide: Boolean, onToggle: () -> Unit) {
 private fun StopRow(
     position: Int,
     stop: Stop,
+    highlighted: Boolean = false,
     onOpen: () -> Unit,
     onDeliver: () -> Unit,
     onUndo: () -> Unit,
     onOnMyWay: () -> Unit,
 ) {
     val delivered = stop.status == "delivered"
+    val container = when {
+        highlighted -> Color(0xFFFFF3C4)   // warm flash when arrived from a map pin
+        delivered -> Color(0xFFF1F8E9)
+        else -> MaterialTheme.colorScheme.surface
+    }
     Card(
         Modifier.fillMaxWidth().clickable { onOpen() },
-        colors = CardDefaults.cardColors(containerColor = if (delivered) Color(0xFFF1F8E9) else MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = container),
+        border = if (highlighted) BorderStroke(2.dp, Orange) else null,
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

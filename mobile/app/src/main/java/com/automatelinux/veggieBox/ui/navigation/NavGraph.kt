@@ -99,7 +99,19 @@ fun AppNavGraph() {
                         onOpenMap = { nav.navigate("map") },
                     )
                 }
-                composable("map") { MapScreen(vm) }
+                composable("map") {
+                    MapScreen(
+                        vm = vm,
+                        onOpenInRoute = { stopId ->
+                            vm.focusStopInRoute(stopId)
+                            nav.navigate("route") {
+                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                    )
+                }
                 composable("greeting") { GreetingScreen(vm) }
                 composable("stop/{id}") { entry ->
                     StopDetailScreen(

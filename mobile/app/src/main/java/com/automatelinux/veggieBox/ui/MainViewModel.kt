@@ -42,6 +42,14 @@ class MainViewModel @Inject constructor(
     private val _reorderTick = MutableStateFlow(0)
     val reorderTick: StateFlow<Int> = _reorderTick.asStateFlow()
 
+    // Set when the user taps a map pin and chooses "open in route list". The Route
+    // screen scrolls to and briefly highlights this stop, then clears it.
+    private val _focusStopId = MutableStateFlow<Int?>(null)
+    val focusStopId: StateFlow<Int?> = _focusStopId.asStateFlow()
+
+    fun focusStopInRoute(stopId: Int) { _focusStopId.update { stopId } }
+    fun clearFocusStop() { _focusStopId.update { null } }
+
     init {
         load()
     }
