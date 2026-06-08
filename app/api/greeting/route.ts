@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { q } from '@/lib/db';
 import { getBusiness, getWorker, intlPhone, renderTemplate, getTemplate } from '@/lib/biz';
 
-function publicBase(req: Request): string {
-  // Explicit override wins; otherwise trust nginx's forwarded host (the real
-  // public hostname customers must reach), then fall back to the request origin.
-  const env = process.env.PUBLIC_BASE_URL;
-  if (env) return env.replace(/\/$/, '');
+// Resolve the public base for self-service links. Order: per-business value from
+// the DB (runtime read — survives Next's build-time inlining of process.env, and
+// the reverse-proxy hops) → forwarded host header → request origin.
+function publicBase(req: Request, businessBase: string | null): string {
+  if (businessBase) return businessBase.replace(/\/$/, '');
   const h = req.headers;
   const host = h.get('x-forwarded-host') ?? h.get('host');
   const proto = h.get('x-forwarded-proto') ?? 'https';
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
     const tmpl =
       (await getTemplate(business.id, 'greeting_missing_details')) ||
       'שלום {name}, נשמח לקבל כתובת והוראות הגעה: {link}';
-    const base = publicBase(req);
+    const base = publicBase(req, business.public_base_url);
 
     const targets = rows.map((r) => {
       const link = `${base}/d/${r.details_token}`;

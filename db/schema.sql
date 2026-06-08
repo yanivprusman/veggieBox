@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS businesses (
   default_central_drop VARCHAR(255) DEFAULT NULL,           -- "נקודה קבועה אצל נופר"
   rate_per_delivery    DECIMAL(8,2) NOT NULL DEFAULT 10.00,
   currency             VARCHAR(8)   NOT NULL DEFAULT '₪',
+  public_base_url      VARCHAR(255) DEFAULT NULL,           -- public URL for self-service links (per business)
   map_center_lat       DOUBLE       DEFAULT NULL,
   map_center_lon       DOUBLE       DEFAULT NULL,
   created_at           TIMESTAMP    DEFAULT CURRENT_TIMESTAMP

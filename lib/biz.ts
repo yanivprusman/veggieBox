@@ -8,6 +8,7 @@ export type Business = {
   default_central_drop: string | null;
   rate_per_delivery: string; // DECIMAL comes back as string
   currency: string;
+  public_base_url: string | null;
   map_center_lat: number | null;
   map_center_lon: number | null;
 };
