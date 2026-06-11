@@ -44,7 +44,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       ? `https://wa.me/${phoneIntl}?text=${encodeURIComponent(message)}`
       : null;
 
-    await exec('UPDATE route_stops SET on_my_way_sent_at=NOW() WHERE id=?', [stopId]);
+    // Only record "sent" when there's actually a message link — a customer with no
+    // phone number never received anything.
+    if (waUrl) {
+      await exec('UPDATE route_stops SET on_my_way_sent_at=NOW() WHERE id=?', [stopId]);
+    }
 
     return NextResponse.json({ ok: true, message, phoneIntl, waUrl });
   } catch (e) {

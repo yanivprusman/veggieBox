@@ -55,9 +55,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ token: string 
       }
     }
 
+    // Never let the public form ERASE data: a blank address or missing coords keep
+    // the existing values (the worker's GPS pin is the reliable coord source — a
+    // customer re-submitting without sharing location must not wipe it).
     await exec(
       `UPDATE customers
-       SET address=?, house_instructions=?, drop_preference=?, lat=?, lon=?,
+       SET address=COALESCE(NULLIF(?, ''), address),
+           house_instructions=?,
+           drop_preference=COALESCE(?, drop_preference),
+           lat=COALESCE(?, lat), lon=COALESCE(?, lon),
            details_filled_at=NOW()
        WHERE id=?`,
       [b.address ?? null, b.houseInstructions ?? null, dropPref, lat, lon, found[0].id],

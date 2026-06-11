@@ -93,25 +93,29 @@ export function resolveStartPoint(
 // Find (or create) today's active route for the worker, and make sure every active
 // customer has a pending stop on it (so newly added customers show up too).
 export async function getOrCreateTodayRoute(businessId: number, workerId: number): Promise<number> {
-  const existing = await q<{ id: number }>(
-    'SELECT id FROM routes WHERE business_id=? AND worker_id=? AND route_date=CURDATE() LIMIT 1',
+  // INSERT IGNORE leans on uniq_route(business_id, worker_id, route_date) so two
+  // devices opening the app at the same moment can't race a check-then-insert into
+  // a duplicate-key 500 — the loser just re-selects the winner's row.
+  const res = await exec(
+    "INSERT IGNORE INTO routes (business_id, worker_id, route_date, status) VALUES (?,?,CURDATE(),'active')",
     [businessId, workerId],
   );
   let routeId: number;
-  let isNewRoute = false;
-  if (existing[0]) {
-    routeId = existing[0].id;
+  const isNewRoute = res.affectedRows > 0;
+  if (isNewRoute) {
+    routeId = res.insertId;
   } else {
-    const res = await exec(
-      "INSERT INTO routes (business_id, worker_id, route_date, status) VALUES (?,?,CURDATE(),'active')",
+    const existing = await q<{ id: number }>(
+      'SELECT id FROM routes WHERE business_id=? AND worker_id=? AND route_date=CURDATE() LIMIT 1',
       [businessId, workerId],
     );
-    routeId = res.insertId;
-    isNewRoute = true;
+    if (!existing[0]) throw new Error('todays route neither created nor found');
+    routeId = existing[0].id;
   }
-  // Ensure a stop exists for each active customer not yet on the route.
+  // Ensure a stop exists for each active customer not yet on the route. INSERT
+  // IGNORE (uniq_stop) covers the same two-devices race on the back-fill.
   await exec(
-    `INSERT INTO route_stops (route_id, customer_id, seq, cartons, status)
+    `INSERT IGNORE INTO route_stops (route_id, customer_id, seq, cartons, status)
      SELECT ?, c.id,
             COALESCE(c.sort_hint, 999),
             c.default_cartons, 'pending'
