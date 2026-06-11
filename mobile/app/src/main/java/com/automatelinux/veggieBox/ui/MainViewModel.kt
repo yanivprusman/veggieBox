@@ -6,8 +6,11 @@ import com.automatelinux.veggieBox.data.api.VeggieApi
 import com.automatelinux.veggieBox.util.SettingsStore
 import com.automatelinux.veggieBox.data.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -49,6 +52,16 @@ class MainViewModel @Inject constructor(
 
     fun focusStopInRoute(stopId: Int) { _focusStopId.update { stopId } }
     fun clearFocusStop() { _focusStopId.update { null } }
+
+    // One-shot user-facing messages (mostly write failures). A delivery worker in a
+    // village with patchy reception MUST know a "delivered" tap didn't reach the
+    // server — silently swallowing the error loses earnings data.
+    private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 4)
+    val messages: SharedFlow<String> = _messages.asSharedFlow()
+
+    private suspend fun reportFailure(what: String, e: Throwable) {
+        _messages.emit("$what — בדוק חיבור לאינטרנט (${e.message ?: "שגיאה"})")
+    }
 
     init {
         load()
@@ -102,20 +115,37 @@ class MainViewModel @Inject constructor(
     private fun update(stopId: Int, body: StatusBody) {
         viewModelScope.launch {
             runCatching { api.updateStop(stopId, body) }
+                .onFailure { reportFailure("העדכון לא נשמר", it) }
             load()
         }
     }
 
-    /** Records "on my way" server-side and returns the wa.me URL for the UI to open. */
-    suspend fun onMyWay(stopId: Int): String? =
-        runCatching { api.onMyWay(stopId).waUrl }.getOrNull().also { load() }
+    /**
+     * Records "on my way" server-side and returns the wa.me URL for the UI to open.
+     * Distinguishes a network failure (reported via [messages], returns null) from a
+     * customer with no phone (also null — caller shows its own hint).
+     */
+    suspend fun onMyWay(stopId: Int): String? {
+        val result = runCatching { api.onMyWay(stopId) }
+        result.exceptionOrNull()?.let {
+            reportFailure("שליחת 'בדרך' נכשלה", it)
+            return null
+        }
+        load()
+        val waUrl = result.getOrNull()?.waUrl
+        if (waUrl == null) _messages.emit("אין מספר טלפון ללקוח")
+        return waUrl
+    }
 
     fun optimize(lat: Double?, lon: Double?, onDone: () -> Unit = {}) {
         val routeId = _state.value.route?.routeId ?: return
         viewModelScope.launch {
             runCatching { api.optimize(OptimizeBody(routeId, lat, lon)) }
-            reload()                       // await: state holds the new order before we signal
-            _reorderTick.update { it + 1 } // tells the UI to scroll the (now-reordered) list to top
+                .onFailure { reportFailure("סידור המסלול נכשל", it) }
+                .onSuccess {
+                    reload()                       // await: state holds the new order before we signal
+                    _reorderTick.update { it + 1 } // tells the UI to scroll the (now-reordered) list to top
+                }
             onDone()
         }
     }
@@ -123,6 +153,8 @@ class MainViewModel @Inject constructor(
     fun setCustomerLocation(customerId: Int, lat: Double, lon: Double, onDone: () -> Unit = {}) {
         viewModelScope.launch {
             runCatching { api.updateCustomer(customerId, mapOf("lat" to lat, "lon" to lon)) }
+                .onFailure { reportFailure("שמירת המיקום נכשלה", it) }
+                .onSuccess { _messages.emit("📍 מיקום הבית נשמר") }
             load()
             onDone()
         }
@@ -136,7 +168,7 @@ class MainViewModel @Inject constructor(
                     "file", file.name, file.asRequestBody(type.toMediaTypeOrNull()),
                 )
                 api.uploadMedia(stopId, part)
-            }
+            }.onFailure { reportFailure("העלאת התיעוד נכשלה", it) }
             load()
             onDone()
         }

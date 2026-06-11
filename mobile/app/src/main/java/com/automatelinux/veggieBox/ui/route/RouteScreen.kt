@@ -64,6 +64,11 @@ fun RouteScreen(
         }
     }
 
+    // Failed writes (delivered/on-my-way/optimize) surface here — never silently.
+    LaunchedEffect(Unit) {
+        vm.messages.collect { snackbar.showSnackbar(it) }
+    }
+
     val locPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) LocationUtil.requestOneShot(ctx) { lat, lon -> vm.optimize(lat, lon) }
         else vm.optimize(null, null)
@@ -133,10 +138,10 @@ fun RouteScreen(
                             onDeliver = { vm.deliver(stop.stopId) },
                             onUndo = { vm.undeliver(stop.stopId) },
                             onOnMyWay = {
+                                // null = no phone / network failure — the VM emits the
+                                // explanation on vm.messages either way.
                                 scope.launch {
-                                    val url = vm.onMyWay(stop.stopId)
-                                    if (url != null) Intents.whatsapp(ctx, url)
-                                    else snackbar.showSnackbar("אין מספר טלפון ללקוח")
+                                    vm.onMyWay(stop.stopId)?.let { Intents.whatsapp(ctx, it) }
                                 }
                             },
                         )

@@ -38,6 +38,12 @@ fun StopDetailScreen(vm: MainViewModel, stopId: Int, onBack: () -> Unit) {
 
     var showDrop by remember { mutableStateOf(false) }
     var captureFile by remember { mutableStateOf<File?>(null) }
+    val snackbar = remember { SnackbarHostState() }
+
+    // Failed writes (status/cartons/upload/pin) surface here — never silently.
+    LaunchedEffect(Unit) {
+        vm.messages.collect { snackbar.showSnackbar(it) }
+    }
 
     val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         if (ok) captureFile?.let { vm.uploadMedia(stopId, it) }
@@ -60,6 +66,7 @@ fun StopDetailScreen(vm: MainViewModel, stopId: Int, onBack: () -> Unit) {
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Green, titleContentColor = Color.White, navigationIconContentColor = Color.White),
@@ -149,11 +156,22 @@ fun StopDetailScreen(vm: MainViewModel, stopId: Int, onBack: () -> Unit) {
                 ActionBtn("צלם סרטון", Icons.Filled.Videocam, Modifier.weight(1f)) { capture(true) }
             }
             stop.mediaPath?.let { mp ->
-                AsyncImage(
-                    model = if (mp.startsWith("http")) mp else "$baseUrl$mp",
-                    contentDescription = "תיעוד",
-                    modifier = Modifier.fillMaxWidth().height(180.dp),
-                )
+                val url = if (mp.startsWith("http")) mp else "$baseUrl$mp"
+                val isVideo = mp.substringAfterLast('.', "").lowercase() in listOf("mp4", "3gp", "mov", "webm")
+                if (isVideo) {
+                    // Coil's AsyncImage can't play video — hand the clip to a player.
+                    OutlinedButton(onClick = { Intents.view(ctx, url) }, Modifier.fillMaxWidth()) {
+                        Icon(Icons.Filled.PlayCircle, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("צפה בסרטון התיעוד 🎬")
+                    }
+                } else {
+                    AsyncImage(
+                        model = url,
+                        contentDescription = "תיעוד",
+                        modifier = Modifier.fillMaxWidth().height(180.dp),
+                    )
+                }
             }
 
             HorizontalDivider()

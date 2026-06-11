@@ -18,6 +18,9 @@ object Intents {
 
     fun whatsapp(ctx: Context, waUrl: String) = open(ctx, waUrl)
 
+    /** Open any URL in the system handler (browser / video player). */
+    fun view(ctx: Context, url: String) = open(ctx, url)
+
     /** Open Waze navigation. By coordinates when known, else by address text. */
     fun waze(ctx: Context, lat: Double?, lon: Double?, address: String?) {
         val url = if (lat != null && lon != null) {
