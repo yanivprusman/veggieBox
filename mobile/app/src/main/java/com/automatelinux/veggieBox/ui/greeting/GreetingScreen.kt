@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.automatelinux.veggieBox.ui.MainViewModel
-import com.automatelinux.veggieBox.ui.route.Green
 import com.automatelinux.veggieBox.util.Intents
 
 @Composable
@@ -22,7 +21,7 @@ fun GreetingScreen(vm: MainViewModel) {
     val targets = state.greet
 
     Column(Modifier.fillMaxSize()) {
-        Surface(color = Green.copy(alpha = 0.08f)) {
+        Surface(color = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {
             Text(
                 "${targets.size} לקוחות ללא כתובת. כל לחיצה פותחת וואטסאפ עם הודעה מוכנה שמבקשת מהם למלא כתובת + הוראות הגעה (נשלח מהמספר שלך, כדי שיכירו אותך).",
                 Modifier.padding(16.dp),
@@ -50,9 +49,8 @@ fun GreetingScreen(vm: MainViewModel) {
                             if (waUrl != null) {
                                 Button(
                                     onClick = { Intents.whatsapp(ctx, waUrl) },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Green),
                                 ) {
-                                    Icon(Icons.Filled.Send, null, Modifier.size(18.dp))
+                                    Icon(Icons.AutoMirrored.Filled.Send, null, Modifier.size(18.dp))
                                     Spacer(Modifier.width(6.dp))
                                     Text("בקש פרטים")
                                 }

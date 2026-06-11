@@ -21,7 +21,7 @@ import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.automatelinux.veggieBox.data.model.Stop
 import com.automatelinux.veggieBox.ui.MainViewModel
-import com.automatelinux.veggieBox.ui.route.Green
+import com.automatelinux.veggieBox.ui.theme.BrandGreen
 import com.automatelinux.veggieBox.util.Intents
 import com.automatelinux.veggieBox.util.LocationUtil
 import kotlinx.coroutines.launch
@@ -69,7 +69,7 @@ fun StopDetailScreen(vm: MainViewModel, stopId: Int, onBack: () -> Unit) {
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Green, titleContentColor = Color.White, navigationIconContentColor = Color.White),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrandGreen, titleContentColor = Color.White, navigationIconContentColor = Color.White),
                 title = { Text(stop?.name ?: "פרטי משלוח", maxLines = 1) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowForward, "חזור") }
@@ -92,11 +92,11 @@ fun StopDetailScreen(vm: MainViewModel, stopId: Int, onBack: () -> Unit) {
                     InfoRow(Icons.Filled.Place, stop.address ?: "אין כתובת — בקש מהלקוח (מסך 'חסרי פרטים')")
                     val houseInstr = stop.houseInstructions
                     if (!houseInstr.isNullOrBlank()) {
-                        InfoRow(Icons.Filled.Info, houseInstr, color = Color(0xFF8D6E00))
+                        InfoRow(Icons.Filled.Info, houseInstr, color = MaterialTheme.colorScheme.tertiary)
                     }
                     stop.dropPreference?.let {
                         val txt = if (it == "central") "אם לא בבית: נקודה מרכזית" else "אם לא בבית: ליד הבית"
-                        InfoRow(Icons.Filled.MoveToInbox, txt, color = Color(0xFF1565C0))
+                        InfoRow(Icons.Filled.MoveToInbox, txt, color = MaterialTheme.colorScheme.secondary)
                     }
                     InfoRow(Icons.Filled.Inventory2, "${stop.cartons} ארגזים")
                 }
@@ -112,7 +112,7 @@ fun StopDetailScreen(vm: MainViewModel, stopId: Int, onBack: () -> Unit) {
 
             // Contact / navigation
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ActionBtn("בדרך 💬", Icons.Filled.Send, Modifier.weight(1f)) {
+                ActionBtn("בדרך 💬", Icons.AutoMirrored.Filled.Send, Modifier.weight(1f)) {
                     scope.launch { vm.onMyWay(stopId)?.let { Intents.whatsapp(ctx, it) } }
                 }
                 ActionBtn("Waze 🧭", Icons.Filled.Navigation, Modifier.weight(1f)) {
@@ -128,11 +128,11 @@ fun StopDetailScreen(vm: MainViewModel, stopId: Int, onBack: () -> Unit) {
             // Delivery status
             if (stop.status == "delivered") {
                 val drop = when (stop.dropUsed) { "central" -> "בנקודה המרכזית"; "beside" -> "ליד הבית"; else -> "ביד/בדלת" }
-                Surface(color = Green.copy(alpha = 0.1f), shape = MaterialTheme.shapes.medium) {
+                Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.medium) {
                     Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.CheckCircle, null, tint = Green)
+                        Icon(Icons.Filled.CheckCircle, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
                         Spacer(Modifier.width(8.dp))
-                        Text("נמסר ($drop)", Modifier.weight(1f), color = Green, fontWeight = FontWeight.Bold)
+                        Text("נמסר ($drop)", Modifier.weight(1f), color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
                         TextButton(onClick = { vm.undeliver(stopId) }) { Text("בטל") }
                     }
                 }
@@ -140,7 +140,6 @@ fun StopDetailScreen(vm: MainViewModel, stopId: Int, onBack: () -> Unit) {
                 Button(
                     onClick = { vm.deliver(stopId, "home") },
                     Modifier.fillMaxWidth().height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Green),
                 ) {
                     Icon(Icons.Filled.Check, null); Spacer(Modifier.width(8.dp)); Text("נמסר ביד / בדלת", style = MaterialTheme.typography.titleMedium)
                 }
@@ -210,12 +209,12 @@ private fun DropDialog(preselect: String?, centralLabel: String, onPick: (String
                 Button(
                     onClick = { onPick("beside") },
                     Modifier.fillMaxWidth(),
-                    colors = if (preselect == "beside") ButtonDefaults.buttonColors(containerColor = Green) else ButtonDefaults.buttonColors(),
+                    colors = if (preselect == "beside") ButtonDefaults.buttonColors() else ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer),
                 ) { Text("ליד הבית / על יד הדלת") }
                 Button(
                     onClick = { onPick("central") },
                     Modifier.fillMaxWidth(),
-                    colors = if (preselect == "central") ButtonDefaults.buttonColors(containerColor = Green) else ButtonDefaults.buttonColors(),
+                    colors = if (preselect == "central") ButtonDefaults.buttonColors() else ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer),
                 ) { Text(centralLabel) }
             }
         },

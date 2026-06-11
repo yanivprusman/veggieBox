@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,13 +27,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.automatelinux.veggieBox.data.model.Stop
 import com.automatelinux.veggieBox.ui.MainViewModel
+import com.automatelinux.veggieBox.ui.theme.BrandGreen
 import com.automatelinux.veggieBox.util.Intents
 import com.automatelinux.veggieBox.util.LocationUtil
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-
-val Green = Color(0xFF2E7D32)
-val Orange = Color(0xFFF57C00)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,7 +93,7 @@ fun RouteScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Green, titleContentColor = Color.White, actionIconContentColor = Color.White),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrandGreen, titleContentColor = Color.White, actionIconContentColor = Color.White),
                 title = { Text("🥬 " + (biz?.name ?: "VeggieBox"), maxLines = 1) },
                 actions = {
                     IconButton(onClick = { vm.toggleHideDelivered() }) {
@@ -193,19 +192,20 @@ private fun StatsHeader(state: com.automatelinux.veggieBox.ui.UiState) {
     val p = state.route?.progress
     val e = state.earnings
     val cur = state.route?.business?.currency ?: "₪"
+    val cs = MaterialTheme.colorScheme
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        StatChip("נמסרו", "${p?.delivered ?: 0}/${p?.total ?: 0}", Green, Modifier.weight(1f))
-        StatChip("נותרו", "${p?.remaining ?: 0}", Orange, Modifier.weight(1f))
-        StatChip("רווח היום", "${(e?.today?.amount ?: 0.0).toInt()}$cur", Color(0xFF1565C0), Modifier.weight(1f))
+        StatChip("נמסרו", "${p?.delivered ?: 0}/${p?.total ?: 0}", cs.primary, Modifier.weight(1f))
+        StatChip("נותרו", "${p?.remaining ?: 0}", cs.tertiary, Modifier.weight(1f))
+        StatChip("רווח היום", "${(e?.today?.amount ?: 0.0).toInt()}$cur", cs.secondary, Modifier.weight(1f))
     }
 }
 
 @Composable
 private fun StatChip(label: String, value: String, color: Color, modifier: Modifier = Modifier) {
-    Surface(modifier, shape = RoundedCornerShape(12.dp), color = color.copy(alpha = 0.10f)) {
+    Surface(modifier, shape = RoundedCornerShape(12.dp), color = color.copy(alpha = 0.12f)) {
         Column(Modifier.padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(value, style = MaterialTheme.typography.titleMedium, color = color)
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -235,21 +235,24 @@ private fun StopRow(
     onOnMyWay: () -> Unit,
 ) {
     val delivered = stop.status == "delivered"
+    val cs = MaterialTheme.colorScheme
+    // Container roles guarantee readable "on" colors in BOTH light and dark mode —
+    // the old hardcoded pastels were light-mode-only and broke on the dark theme.
     val container = when {
-        highlighted -> Color(0xFFFFF3C4)   // warm flash when arrived from a map pin
-        delivered -> Color(0xFFF1F8E9)
-        else -> MaterialTheme.colorScheme.surface
+        highlighted -> cs.tertiaryContainer   // warm flash when arrived from a map pin
+        delivered -> cs.primaryContainer
+        else -> cs.surface
     }
     Card(
         Modifier.fillMaxWidth().clickable { onOpen() },
         colors = CardDefaults.cardColors(containerColor = container),
-        border = if (highlighted) BorderStroke(2.dp, Orange) else null,
+        border = if (highlighted) BorderStroke(2.dp, cs.tertiary) else null,
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     Modifier.size(12.dp).clip(CircleShape)
-                        .background(if (delivered) Green else Orange),
+                        .background(if (delivered) cs.primary else cs.tertiary),
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
@@ -272,7 +275,7 @@ private fun StopRow(
                 Text(
                     "📍 ${stop.houseInstructions}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF8D6E00),
+                    color = cs.tertiary,
                     modifier = Modifier.padding(start = 22.dp, top = 2.dp),
                 )
             }
@@ -280,15 +283,15 @@ private fun StopRow(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (!delivered) {
                     OutlinedButton(onClick = onOnMyWay, modifier = Modifier.weight(1f), contentPadding = PaddingValues(8.dp)) {
-                        Icon(Icons.Filled.Send, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("בדרך")
+                        Icon(Icons.AutoMirrored.Filled.Send, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("בדרך")
                     }
-                    Button(onClick = onDeliver, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Green), contentPadding = PaddingValues(8.dp)) {
+                    Button(onClick = onDeliver, modifier = Modifier.weight(1f), contentPadding = PaddingValues(8.dp)) {
                         Icon(Icons.Filled.Check, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("נמסר")
                     }
                 } else {
                     TextButton(onClick = onUndo) { Text("בטל מסירה") }
                     val drop = when (stop.dropUsed) { "central" -> "נקודה מרכזית"; "beside" -> "ליד הבית"; else -> "נמסר" }
-                    Text(drop, Modifier.align(Alignment.CenterVertically), color = Green, style = MaterialTheme.typography.labelMedium)
+                    Text(drop, Modifier.align(Alignment.CenterVertically), color = cs.primary, style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
